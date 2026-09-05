@@ -7,7 +7,6 @@ describe('OrderController', ()  => {
     it('sends a confirmation email when payment succeeds', async () => {
       
         // arrange
-
       const paymentStub: PaymentService = {
         charge: async (amount: number) => ({
           success: true,
@@ -24,7 +23,6 @@ describe('OrderController', ()  => {
       };
       
       // act
-
       const result = await new OrderController(paymentStub, emailStub)
         .createOrder({
           itemId: 'widget-small',
@@ -32,7 +30,6 @@ describe('OrderController', ()  => {
           email: 'test@example.com',
         });
 
-    
       // assert
       expect(result.status).toBe('success');
 
@@ -42,4 +39,34 @@ describe('OrderController', ()  => {
         ]);
       }
     });
+
+    it('does not send a confirmation email when payment fails', async () => {
+        // arrange — brand new paymentStub, emailStub, sentEmails here
+        const paymentStub: PaymentService = {
+            charge: async (amount: number) => ({
+              success: false,
+              transactionId: 'stub-txn-123',
+            }),
+          };
+    
+          const sentEmails: { email: string; orderId: string }[] = [];
+    
+          const emailStub: EmailService = {
+            sendConfirmation: async (email: string, orderId: string) => {
+                sentEmails.push({ email, orderId });
+              },
+          };
+        
+        // act
+        const result = await new OrderController(paymentStub, emailStub)
+        .createOrder({
+          itemId: 'widget-small',
+          quantity: 1,
+          email: 'test@example.com',
+        });
+
+        // assert
+        expect(result.status).toBe('payment_failed');
+        expect(sentEmails).toEqual([]);
+      });
   });
