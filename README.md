@@ -22,8 +22,12 @@ Request body:
 Responses:
 
 - `201` — `{ "orderId": "...", "transactionId": "..." }`
-- `402` — `{ "error": "Payment failed" }`
 - `400` — invalid request body or unknown `itemId`
+
+Note: `OrderController` also has a `payment_failed` branch (mapped to a
+`402` response), and it's tested at the unit level via a stub. It isn't
+reachable through the live API today, though, since the real
+`ThirdPartyPaymentService.charge()` always returns `success: true`.
 
 ## Running locally
 
@@ -90,6 +94,17 @@ not to re-check business logic already covered by the unit tests.
 
 `playwright.config.ts` starts the dev server automatically before the
 tests run (`webServer` block), so there's no need to start it by hand.
+
+Three tests currently cover this layer:
+
+- `POST /orders succeeds with a valid item, quantity, and email` — the
+  happy path, asserting a `201` with an `orderId`/`transactionId` shape.
+- `POST /orders returns 400 for an unknown itemId` — asserts the real
+  route handler's validation error response for an item not in the
+  catalog.
+- `POST /orders returns 400 when a required field is missing` — asserts
+  the real route handler's validation error response when `quantity` is
+  omitted from the request body.
 
 Run with:
 
