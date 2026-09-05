@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { OrderController } from './OrderController';
 import { PaymentService } from '../services/PaymentService';
 import { EmailService } from '../services/EmailService';
@@ -78,7 +78,7 @@ describe('OrderController', ()  => {
               throw new Error('paymentService.charge should never be called for an invalid item');
             },
           };
-          
+
         const sentEmails: { email: string; orderId: string }[] = [];
 
         const emailStub: EmailService = {
@@ -99,4 +99,36 @@ describe('OrderController', ()  => {
         expect(result.status).toBe('invalid_item');
         expect(sentEmails).toEqual([]);
     });
+
+    it('calls the email service with the correct arguments when payment succeeds', async () => {
+        // arrange
+        const paymentStub: PaymentService = {
+          charge: async (amount: number) => ({
+            success: true,
+            transactionId: 'stub-txn-123',
+          }),
+        };
+      
+        const emailMock = vi.fn(async () => {});
+      
+        const emailStub: EmailService = {
+          sendConfirmation: emailMock,
+        };
+      
+        // act
+        const result = await new OrderController(paymentStub, emailStub)
+          .createOrder({
+            itemId: 'widget-small',
+            quantity: 1,
+            email: 'test@example.com',
+          });
+      
+        // assert
+        expect(result.status).toBe('success');
+      
+        if (result.status === 'success') {
+          expect(emailMock).toHaveBeenCalledTimes(1);
+          expect(emailMock).toHaveBeenCalledWith('test@example.com', result.orderId);
+        }
+      });
   });
