@@ -32,3 +32,17 @@ test('POST /orders returns 400 for an unknown itemId', async ({ request }) => {
   const body = await response.json();
   expect(body.error).toBe('Unknown itemId: unknown-item');
 });
+
+test('POST /orders returns 400 when a required field is missing', async ({ request }) => {
+  
+  const response = await request.post('/orders', {
+    data: {
+      itemId: 'widget-small',
+      email: 'test@example.com',
+    },
+  });
+
+  expect(response.status()).toBe(400);
+  const body = await response.json();
+  expect(body.error).toBe('itemId (string), quantity (number) and email (string) are required');
+});
