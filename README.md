@@ -78,3 +78,29 @@ called). The `vi.fn()` version is the more idiomatic way to verify that
 an interaction actually happened, since call count and arguments are
 checked directly through the mocking library rather than reconstructed
 from manually recorded state.
+
+### API Tests (Playwright)
+
+`tests/orders.api.spec.ts` is a different layer entirely: it sends a
+real HTTP request to the actual running Express server and uses the
+real `ThirdPartyPaymentService` and `ThirdPartyEmailService` — no
+stubs, mocks, or fakes. It exists to prove the app is wired together
+correctly end to end (JSON parsing, routing, the real service calls),
+not to re-check business logic already covered by the unit tests.
+
+`playwright.config.ts` starts the dev server automatically before the
+tests run (`webServer` block), so there's no need to start it by hand.
+
+Run with:
+
+```bash
+npx playwright test
+```
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push and pull request. It
+installs dependencies (`npm ci`), builds (`npm run build`), runs the
+Vitest unit tests, then installs Playwright's browsers and runs the
+Playwright API tests. If the Playwright run fails, the HTML report is
+uploaded as a build artifact (kept for 7 days) for inspection.
