@@ -69,4 +69,34 @@ describe('OrderController', ()  => {
         expect(result.status).toBe('payment_failed');
         expect(sentEmails).toEqual([]);
       });
+
+    it('returns an error when the item is not found', async () => {
+        // arrange 
+
+        const paymentStub: PaymentService = {
+            charge: async () => {
+              throw new Error('paymentService.charge should never be called for an invalid item');
+            },
+          };
+          
+        const sentEmails: { email: string; orderId: string }[] = [];
+
+        const emailStub: EmailService = {
+          sendConfirmation: async (email: string, orderId: string) => {
+            sentEmails.push({ email, orderId });
+          },
+        };
+        
+        // act
+        const result = await new OrderController(paymentStub, emailStub)
+        .createOrder({
+          itemId: 'invalid-item',
+          quantity: 1,
+          email: 'test@example.com',
+        });
+
+        // assert
+        expect(result.status).toBe('invalid_item');
+        expect(sentEmails).toEqual([]);
+    });
   });
